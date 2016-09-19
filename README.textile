@@ -4,7 +4,7 @@ lddsafe -- Safely print shared library dependencies (similar to ldd)
 
 h1. SYNOPSIS
 
-lddsafe [-n] FILE ...
+lddsafe [-n] [-q] FILE ...
 
 h1. DESCRIPTION
 
@@ -13,6 +13,8 @@ h1. DESCRIPTION
 h1. OPTIONS
 
 -n Nonrecursive mode. List direct dependencies only.
+
+-q Quiet mode. Only list the resolved library paths.
 
 h1. REQUIREMENTS
 

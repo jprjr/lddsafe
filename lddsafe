@@ -44,11 +44,22 @@ findexec sed
 # Check needed files.
 checkreadable /etc/ld.so.conf
 
+# set default options
+recursive=1
+quiet=0
+
 # Check arguments.
-[ "$1" == "-n" ] && recursive=0 || recursive=1
-[ "$1" == "-n" ] && shift
+while getopts "qn" opt; do
+    case $opt in
+      n) recursive=0 ;;
+      q) quiet=1 ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
 if [ $# -eq 0 ]; then
-	echo "Usage: $( basename $0 ) [-n] FILE..." 2>&1
+	echo "Usage: $( basename $0 ) [-n] [-q] FILE..." 2>&1
 	exit 1
 fi
 for arg in "$@"; do
@@ -110,7 +121,11 @@ recursivedeps()
 			VISITEDLIBS["$lib"]=1
 			file=`searchlib "$lib"`
 			if [ "$file" ]; then
-				echo "	$lib => $file"
+                if [ $quiet -eq 1 ] ; then
+                    echo "$file"
+                else
+				    echo "	$lib => $file"
+                fi
 				[ $recursive -eq 1 ] && recursivedeps "$file"
 			else
 				echo "	$lib => not found"
