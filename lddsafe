@@ -95,7 +95,7 @@ searchlib()
 			break
 		fi
 	done
-	[ $found -eq 1 ] && echo "$path"
+	[ $found -eq 1 ] && echo "$path" | sed 's#//*#/#g'
 }
 
 # Already visited libraries.
