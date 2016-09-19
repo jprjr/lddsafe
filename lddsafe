@@ -128,7 +128,9 @@ recursivedeps()
                 fi
 				[ $recursive -eq 1 ] && recursivedeps "$file"
 			else
-				echo "	$lib => not found"
+                if [ $quiet -eq 0 ]; then
+				    echo "	$lib => not found"
+                fi
 			fi
 		fi
 	done
