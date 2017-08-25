@@ -18,7 +18,7 @@ h1. OPTIONS
 
 h1. REQUIREMENTS
 
-The most notable requirement of @lddsafe@ is that it needs @bash@ version 4 or later.
+@lddsafe@ should run under any POSIX shell.
 
 h1. BUG REPORTS
 

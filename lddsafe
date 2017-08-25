@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 # lddsafe - Safely print shared library dependencies (similar to ldd).
 # Author: Ricardo Garcia Gonzalez.
@@ -8,9 +8,6 @@
 
 # Better for grep and expected output of other tools.
 export LANG=C
-
-# Expand globs to nothing when no match is found.
-shopt -s nullglob
 
 # Print error and exit.
 die()
@@ -31,18 +28,11 @@ checkreadable()
 	[ -r "$1" ] || die "$1 missing or not readable"
 }
 
-# Check for bash version.
-[ -n "$BASH_VERSION" ] || die "Bash required"
-[ ${BASH_VERSINFO[0]} -ge 4 ] || die "Bash version 4 or later required"
-
 # Check needed programs.
 findexec objdump
 findexec readelf
 findexec dirname
 findexec sed
-
-# Check needed files.
-checkreadable /etc/ld.so.conf
 
 # set default options
 recursive=1
@@ -93,7 +83,9 @@ ld_so_conf_deps()
 
 # Additional library directories.
 LD_LIBRARY_PATH_LIBS="${LD_LIBRARY_PATH//:/ }"
-MORELIBDIRS="$( sed '/^include[\ \t]/d' $( ld_so_conf_deps /etc/ld.so.conf ) )"
+if test -r /etc/ld.so.conf ; then
+  MORELIBDIRS="$( sed '/^include[\ \t]/d' $( ld_so_conf_deps /etc/ld.so.conf ) )"
+fi
 
 # Search for a given library name.
 searchlib()
@@ -109,17 +101,16 @@ searchlib()
 	[ $found -eq 1 ] && echo "$path" | sed 's#//*#/#g'
 }
 
-# Already visited libraries.
-declare -A VISITEDLIBS
-
 # Print dependency results, recursively.
 recursivedeps()
 {
 	for lib in $( objdump -p "$1" | \
 		      sed -n 's,^ *NEEDED \+\([^ ]\+\) *$,\1,p' ); do
-		if [ ! "${VISITEDLIBS[$lib]}" ]; then
-			VISITEDLIBS["$lib"]=1
-			file=`searchlib "$lib"`
+        libsimple=$(printf "${lib}" | tr -c '0-z_' '_')
+        eval "visited=\${VISITEDLIBS__${libsimple}}"
+		if test -z "${visited}" ; then
+            eval "VISITEDLIBS__${libsimple}=1"
+			file=$(searchlib "$lib")
 			if [ "$file" ]; then
                 if [ $quiet -eq 1 ] ; then
                     echo "$file"
@@ -133,6 +124,7 @@ recursivedeps()
                 fi
 			fi
 		fi
+        unset visited
 	done
 }
 
@@ -154,22 +146,20 @@ for arg in "$@"; do
 	fi
 	if [ $class == ELF64 ]; then
 		if [ -d /lib64 ]; then
-			stdlibs="/lib64 /usr/lib64"
+			stdlibs="/lib64 /usr/local/lib64 /usr/lib64"
 		else
-			stdlibs="/lib /usr/lib"
+			stdlibs="/lib /usr/local/lib /usr/lib"
 		fi
 	else # $class == ELF32
 		if [ -d /lib32 ]; then
-			stdlibs="/lib32 /usr/lib32"
+			stdlibs="/lib32 /usr/local/lib32 /usr/lib32"
 		else
-			stdlibs="/lib /usr/lib"
+			stdlibs="/lib /usr/local/lib /usr/lib"
 		fi
 	fi
 	LIBDIRS="$LD_LIBRARY_PATH_LIBS $MORELIBDIRS $stdlibs"
 
 	# Get a unique list of library dependencies for this argument.
-	unset VISITEDLIBS
-	declare -A VISITEDLIBS
 	recursivedeps "$arg"
 done
 exit 0
